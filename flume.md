@@ -51,10 +51,53 @@ flume-ng agent -c conf -f conf/simple.conf --name agent -Dflume.root.logger=INFO
 telnet localhost 5678  
 hello，world. 
 
+-- 
+###2、write to hdfs
+
+####配置文件
+-- 
+####### Define a memory channel called ch1 on agent1
+* agent1.channels.ch1.type = memory
+* agent1.channels.ch1.capacity = 100000
+* agent1.channels.ch1.transactionCapacity = 100000
+* agent1.channels.ch1.keep-alive = 30
+ 
+ 
+#######define source monitor a file
+* agent1.sources.avro-source1.type = exec
+* agent1.sources.avro-source1.shell = /bin/bash -c
+* agent1.sources.avro-source1.command = tail -n +0 -F /data/flumetmp/a
+* agent1.sources.avro-source1.channels = ch1
+* agent1.sources.avro-source1.threads = 5
+ 
+####### Define a logger sink that simply logs all events it receives
+####### and connect it to the other end of the same channel
+* agent1.sinks.log-sink1.channel = ch1
+* agent1.sinks.log-sink1.type = hdfs
+* agent1.sinks.log-sink1.hdfs.path = hdfs://alex:9000/flumeTest
+* agent1.sinks.log-sink1.hdfs.writeFormat = Text
+* agent1.sinks.log-sink1.hdfs.fileType = DataStream
+* agent1.sinks.log-sink1.hdfs.rollInterval = 0
+* agent1.sinks.log-sink1.hdfs.rollSize = 1000000
+* agent1.sinks.log-sink1.hdfs.rollCount = 0
+* agent1.sinks.log-sink1.hdfs.batchSize = 1000
+* agent1.sinks.log-sink1.hdfs.txnEventMax = 1000
+* agent1.sinks.log-sink1.hdfs.callTimeout = 60000
+* agent1.sinks.log-sink1.hdfs.appendTimeout = 60000
+ 
+####### Finally, now that we've defined all of our components, tell
+####### agent1 which ones we want to activate.
+* agent1.channels = ch1
+* agent1.sources = avro-source1
+* agent1.sinks = log-sink1
+
+
+###执行命令
+flume-ng agent --conf ../conf/ -f flume_directHDFS.conf -n agent1 -Dflume.root.logger=INFO,console
 
 
 
-###2、avro2log
+###3、avro2log
 
 #### 添加如下配置文件
 -- 
